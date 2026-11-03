@@ -1,0 +1,36 @@
+# Learning lab only: one n8n instance, SQLite, no AI sandbox or Code nodes.
+# Do not add a second proxy without reviewing N8N_PROXY_HOPS and forwarded headers.
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:?Set a reviewed exact stable version >=2.35.0}
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST:?Set the real DNS hostname}
+      N8N_PROTOCOL: https
+      N8N_PORT: '5678'
+      N8N_EDITOR_BASE_URL: https://${N8N_HOST}/
+      N8N_WEBHOOK_URL: https://${N8N_HOST}/
+      N8N_PROXY_HOPS: '1'
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Generate and back up a private key}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:?Choose an IANA timezone}
+      TZ: ${GENERIC_TIMEZONE}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    # No host port: only Caddy can reach n8n through the Compose network.
+  caddy:
+    image: caddy:${CADDY_VERSION:?Set a reviewed exact stable Caddy 2 version}
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  n8n_data:
+  caddy_data:
+  caddy_config:
